@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador — Plano de Saúde Empresarial</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#1E3A5F; --navy-dark:#152B47; --blue:#1B7DC4;
+  --blue-light:#7EC8E3; --blue-ice:#EAF5FB; --bg:#F5F4F0;
+  --border:rgba(30,58,95,0.12); --text:#3A4A5C; --muted:#7A8999;
+  --ok:#1a7a3a; --ok-bg:#e8f7ed; --err:#c0392b;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--navy-dark);padding:14px 28px;display:flex;align-items:center;gap:16px;}
+.topbar img{height:40px;width:auto;display:block;filter:brightness(0) invert(1);}
+.topbar-title{font-family:'Nunito',sans-serif;font-weight:800;color:#fff;font-size:16px;letter-spacing:.01em;}
+.topbar-sub{display:none;}
+
+/* ── WRAPPER ── */
+.wrap{max-width:860px;margin:0 auto;padding:28px 16px 60px;}
+
+/* ── STEPS ── */
+.steps{display:flex;align-items:center;gap:0;margin-bottom:28px;background:#fff;border-radius:12px;overflow:hidden;border:1px solid var(--border);}
+.step-item{flex:1;padding:14px 8px;text-align:center;position:relative;cursor:default;}
+.step-item:not(:last-child)::after{content:'';position:absolute;right:0;top:50%;transform:translateY(-50%);width:1px;height:60%;background:var(--border);}
+.step-num{width:26px;height:26px;border-radius:50%;background:var(--border);color:var(--muted);font-family:'Nunito',sans-serif;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center;margin:0 auto 4px;}
+.step-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;}
+.step-item.active .step-num{background:var(--blue);color:#fff;}
+.step-item.active .step-label{color:var(--navy);}
+.step-item.done .step-num{background:var(--ok-bg);color:var(--ok);}
+.step-item.done .step-label{color:var(--ok);}
+
+/* ── CARD ── */
+.card{background:#fff;border-radius:14px;border:1px solid var(--border);padding:24px;margin-bottom:16px;}
+.card-title{font-family:'Nunito',sans-serif;font-weight:800;color:var(--navy);font-size:18px;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.card-title .badge{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 9px;border-radius:20px;background:var(--blue-ice);color:var(--blue);}
+
+/* ── FORM ── */
+label{display:block;font-size:12px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;}
+input[type=text],input[type=email],select{
+  width:100%;padding:11px 14px;border:1.5px solid var(--border);border-radius:8px;
+  font-family:'Inter',sans-serif;font-size:14px;color:var(--navy);background:#fff;
+  transition:border .15s;outline:none;
+}
+input[type=text]:focus,input[type=email]:focus,select:focus{border-color:var(--blue);}
+.field{margin-bottom:18px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:540px){.field-row{grid-template-columns:1fr;}}
+
+/* ── OPERATOR TABS ── */
+.op-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;}
+.op-tab{padding:8px 16px;border-radius:20px;border:1.5px solid var(--border);background:#fff;
+  font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;color:var(--muted);cursor:pointer;transition:all .15s;}
+.op-tab:hover,.op-tab.active{border-color:var(--blue);background:var(--blue-ice);color:var(--navy);}
+
+/* ── PLAN CARDS ── */
+.plans-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;}
+.plan-card{border:2px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:all .15s;background:#fff;position:relative;}
+.plan-card:hover{border-color:var(--blue);box-shadow:0 4px 16px rgba(27,125,196,.1);}
+.plan-card.selected{border-color:var(--blue);background:var(--blue-ice);}
+.op-badge{display:inline-block;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;padding:3px 8px;border-radius:6px;margin-bottom:8px;}
+.op-amil{background:#E3F0FA;color:#0A5FA3;}
+.op-sula{background:#E3F5EC;color:#1a6b3c;}
+.op-brad{background:#FDECEA;color:#b04040;}
+.op-porto{background:#FFF3E0;color:#c55a00;}
+.plan-name{font-family:'Nunito',sans-serif;font-weight:800;font-size:14px;color:var(--navy);line-height:1.3;margin-bottom:10px;}
+.plan-badges{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px;}
+.plan-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:var(--bg);color:var(--muted);}
+.plan-badge.copart{background:#fff3cd;color:#856404;}
+.plan-badge.sem-copart{background:#e8f7ed;color:#1a6b3c;}
+.plan-badge.nacional{background:#e0ecfb;color:#0A5FA3;}
+.plan-price{font-family:'Nunito',sans-serif;font-weight:900;font-size:22px;color:var(--blue);line-height:1;}
+.plan-price-label{font-size:10px;color:var(--muted);margin-top:2px;}
+.plan-check{position:absolute;top:12px;right:12px;width:22px;height:22px;border-radius:50%;background:var(--blue);display:none;align-items:center;justify-content:center;}
+.plan-check svg{width:12px;height:12px;fill:#fff;}
+.plan-card.selected .plan-check{display:flex;}
+
+/* ── REDE TABLE ── */
+.rede-wrap{margin-top:20px;}
+.section-title{font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;color:var(--navy);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.table-wrap{overflow-x:auto;}
+table.rede{width:100%;border-collapse:collapse;font-size:13px;}
+table.rede th{background:var(--navy);color:#fff;font-family:'Nunito',sans-serif;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:10px 12px;text-align:left;}
+table.rede th.hl{background:var(--blue);}
+table.rede td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text);}
+table.rede td.hl{background:var(--blue-ice);}
+table.rede tr:last-child td{border-bottom:none;}
+.tick{color:var(--ok);font-size:16px;}
+.cross{color:#ccc;font-size:16px;}
+
+/* ── COPART TABLE ── */
+.copart-wrap{margin-top:20px;}
+.copart-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+@media(max-width:540px){.copart-grid{grid-template-columns:1fr 1fr;}}
+.copart-item{background:var(--bg);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;}
+.copart-item .ci-label{font-size:11px;color:var(--muted);font-weight:500;}
+.copart-item .ci-val{font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;color:var(--navy);}
+.copart-note{font-size:11px;color:var(--muted);margin-top:8px;}
+
+/* ── DEPENDENTES ── */
+.dep-card{background:var(--bg);border-radius:10px;padding:16px;margin-bottom:12px;position:relative;}
+.dep-card-title{font-family:'Nunito',sans-serif;font-weight:700;font-size:13px;color:var(--navy);margin-bottom:12px;}
+.dep-remove{position:absolute;top:12px;right:12px;background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;color:var(--muted);}
+.dep-remove:hover{border-color:var(--err);color:var(--err);}
+.dep-price{font-family:'Nunito',sans-serif;font-weight:800;font-size:16px;color:var(--blue);margin-top:8px;}
+
+/* ── BUTTONS ── */
+.btn{font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;padding:13px 28px;border-radius:10px;cursor:pointer;border:none;transition:all .15s;}
+.btn-primary{background:var(--blue);color:#fff;}
+.btn-primary:hover{background:#1567a8;}
+.btn-outline{background:#fff;color:var(--navy);border:2px solid var(--border);}
+.btn-outline:hover{border-color:var(--blue);color:var(--blue);}
+.btn-add{background:var(--blue-ice);color:var(--blue);border:1.5px dashed var(--blue);border-radius:10px;padding:12px;width:100%;font-family:'Nunito',sans-serif;font-weight:700;font-size:14px;cursor:pointer;}
+.btn-add:hover{background:#d4eaf8;}
+.btn-row{display:flex;gap:12px;justify-content:flex-end;margin-top:20px;}
+
+/* ── RESUMO ── */
+.resumo-header{background:linear-gradient(135deg,var(--navy-dark),var(--blue));border-radius:12px;padding:20px;color:#fff;margin-bottom:16px;}
+.resumo-nome{font-family:'Nunito',sans-serif;font-weight:900;font-size:22px;}
+.resumo-plano{font-size:14px;color:rgba(255,255,255,.75);margin-top:4px;}
+.resumo-total{font-family:'Nunito',sans-serif;font-weight:900;font-size:30px;margin-top:12px;}
+.resumo-total span{font-size:14px;font-weight:600;opacity:.7;}
+.resumo-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:14px;}
+.resumo-row:last-child{border-bottom:none;}
+.resumo-row .rr-label{color:var(--text);}
+.resumo-row .rr-val{font-family:'Nunito',sans-serif;font-weight:700;color:var(--navy);}
+
+/* ── DISCLAIMER ── */
+.disclaimer{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:12px 16px;font-size:12px;color:#795548;margin-top:12px;}
+
+/* ── SUCCESS ── */
+.success{text-align:center;padding:40px 20px;}
+.success-icon{width:64px;height:64px;border-radius:50%;background:var(--ok-bg);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:32px;}
+.success h2{font-family:'Nunito',sans-serif;font-weight:900;font-size:24px;color:var(--navy);margin-bottom:8px;}
+.success p{color:var(--muted);font-size:14px;}
+
+/* hidden */
+.hidden{display:none;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <img src="Manual da Marca AMV/Corretora Amor _ Vida/assets/logo-horizontal-branca.png" alt="Amor à Vida" onerror="this.src='https://corretoraamoravida.com.br/wp-content/uploads/2023/04/logo-amor-a-vida.svg'">
+  <div>
+    <div class="topbar-title">Simulador de Plano de Saúde</div>
+    <div class="topbar-sub">Corretora Amor à Vida · 5 a 29 vidas</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- STEPS -->
+  <div class="steps" id="steps">
+    <div class="step-item active" data-s="1">
+      <div class="step-num">1</div>
+      <div class="step-label">Titular</div>
+    </div>
+    <div class="step-item" data-s="2">
+      <div class="step-num">2</div>
+      <div class="step-label">Plano</div>
+    </div>
+    <div class="step-item" data-s="3">
+      <div class="step-num">3</div>
+      <div class="step-label">Dependentes</div>
+    </div>
+    <div class="step-item" data-s="4">
+      <div class="step-num">4</div>
+      <div class="step-label">Resumo</div>
+    </div>
+  </div>
+
+  <!-- ═══════ STEP 1 ═══════ -->
+  <div id="s1">
+    <div class="card">
+      <div class="card-title">Dados do Titular</div>
+      <div class="field">
+        <label>Nome completo</label>
+        <input type="text" id="nome" placeholder="Ex: João da Silva">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Faixa etária</label>
+          <select id="faixa">
+            <option value="">Selecione…</option>
+            <option value="0 a 18">0 a 18 anos</option>
+            <option value="19 a 23">19 a 23 anos</option>
+            <option value="24 a 28">24 a 28 anos</option>
+            <option value="29 a 33">29 a 33 anos</option>
+            <option value="34 a 38">34 a 38 anos</option>
+            <option value="39 a 43">39 a 43 anos</option>
+            <option value="44 a 48">44 a 48 anos</option>
+            <option value="49 a 53">49 a 53 anos</option>
+            <option value="54 a 58">54 a 58 anos</option>
+            <option value="59+">59 anos ou mais</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>E-mail <span style="font-weight:400;text-transform:none">(opcional)</span></label>
+          <input type="email" id="email" placeholder="email@empresa.com">
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="goStep(2)">Próximo →</button>
+    </div>
+  </div>
+
+  <!-- ═══════ STEP 2 ═══════ -->
+  <div id="s2" class="hidden">
+    <div class="card">
+      <div class="card-title">Escolha o Plano <span class="badge" id="faixa-badge"></span></div>
+      <div class="op-tabs" id="op-tabs">
+        <div class="op-tab active" data-op="todos" onclick="filterOp(this)">Todos</div>
+        <div class="op-tab" data-op="AMIL" onclick="filterOp(this)">AMIL</div>
+        <div class="op-tab" data-op="SULAMERICA" onclick="filterOp(this)">SulAmérica</div>
+        <div class="op-tab" data-op="BRADESCO" onclick="filterOp(this)">Bradesco</div>
+        <div class="op-tab" data-op="PORTO" onclick="filterOp(this)">Porto Seguro</div>
+      </div>
+      <div class="plans-grid" id="plans-grid"></div>
+    </div>
+
+    <!-- REDE -->
+    <div class="card hidden" id="rede-card">
+      <div class="section-title">Rede Credenciada</div>
+      <div class="table-wrap" id="rede-wrap"></div>
+    </div>
+
+    <!-- COPART -->
+    <div class="card hidden" id="copart-card">
+      <div class="section-title">Tabela de Coparticipação</div>
+      <div id="copart-wrap"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goStep(1)">← Voltar</button>
+      <button class="btn btn-primary" onclick="goStep(3)">Próximo →</button>
+    </div>
+  </div>
+
+  <!-- ═══════ STEP 3 ═══════ -->
+  <div id="s3" class="hidden">
+    <div class="card">
+      <div class="card-title">Dependentes</div>
+      <div id="deps-list"></div>
+      <button class="btn-add" onclick="addDep()">+ Adicionar dependente</button>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goStep(2)">← Voltar</button>
+      <button class="btn btn-primary" onclick="goStep(4)">Ver Resumo →</button>
+    </div>
+  </div>
+
+  <!-- ═══════ STEP 4 ═══════ -->
+  <div id="s4" class="hidden">
+    <div id="resumo-content"></div>
+    <div class="disclaimer">⚠️ Os valores apresentados podem sofrer alterações sem aviso prévio. Esta simulação tem caráter informativo.</div>
+    <div class="btn-row">
+      <button class="btn btn-outline" onclick="goStep(3)">← Voltar</button>
+      <button class="btn btn-primary" id="btn-enviar" onclick="enviar()">Enviar Simulação</button>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div id="s-success" class="card hidden">
+    <div class="success">
+      <div class="success-icon">✓</div>
+      <h2>Simulação enviada!</h2>
+      <p>Em breve nossa equipe entrará em contato com você.</p>
+      <br>
+      <button class="btn btn-primary" onclick="location.reload()">Nova simulação</button>
+    </div>
+  </div>
+
+</div><!-- /wrap -->
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwmkv_4zXtSvZ6uv0rEanx_7k2MNZi36dgvVGLNuD4zmVhBeze_HkZfFW94tnTFE00ZJg/exec';
+
+/* ═══════════════════════════════════════════════
+   DADOS DOS PLANOS
+═══════════════════════════════════════════════ */
+const PLANOS = {
+  amil_bronze_parcial:{nome:'Bronze — Copart. Parcial',op:'AMIL',cob:'Regional',copart:true,
+    v:{'0 a 18':288.23,'19 a 23':391.42,'24 a 28':459.49,'29 a 33':459.49,'34 a 38':459.49,'39 a 43':513.25,'44 a 48':708.80,'49 a 53':846.31,'54 a 58':1216.99,'59+':1725.69}},
+  amil_prata_parcial:{nome:'Prata — Copart. Parcial',op:'AMIL',cob:'Nacional',copart:true,
+    v:{'0 a 18':347.65,'19 a 23':406.75,'24 a 28':496.24,'29 a 33':595.49,'34 a 38':625.26,'39 a 43':687.79,'44 a 48':859.74,'49 a 53':945.71,'54 a 58':1182.14,'59+':2068.75}},
+  amil_s750_parcial:{nome:'S750 — Copart. Parcial',op:'AMIL',cob:'Regional',copart:true,
+    v:{'0 a 18':522.48,'19 a 23':611.30,'24 a 28':745.79,'29 a 33':894.95,'34 a 38':939.70,'39 a 43':1033.67,'44 a 48':1292.09,'49 a 53':1421.30,'54 a 58':1776.63,'59+':3109.10}},
+  amil_bronze_total:{nome:'Bronze — Copart. Total',op:'AMIL',cob:'Regional',copart:true,
+    v:{'0 a 18':216.17,'19 a 23':293.56,'24 a 28':344.61,'29 a 33':344.61,'34 a 38':344.61,'39 a 43':384.93,'44 a 48':531.59,'49 a 53':634.72,'54 a 58':912.73,'59+':1294.25}},
+  amil_prata_total:{nome:'Prata — Copart. Total',op:'AMIL',cob:'Nacional',copart:true,
+    v:{'0 a 18':260.74,'19 a 23':305.07,'24 a 28':372.19,'29 a 33':446.63,'34 a 38':468.96,'39 a 43':515.86,'44 a 48':644.83,'49 a 53':709.31,'54 a 58':886.64,'59+':1551.62}},
+  amil_s750_total:{nome:'S750 — Copart. Total',op:'AMIL',cob:'Regional',copart:true,
+    v:{'0 a 18':391.88,'19 a 23':458.50,'24 a 28':559.37,'29 a 33':671.24,'34 a 38':704.80,'39 a 43':775.28,'44 a 48':969.10,'49 a 53':1066.01,'54 a 58':1332.51,'59+':2331.89}},
+
+  sula_direto_sem:{nome:'Direto Nacional — Sem Copart.',op:'SULAMERICA',cob:'Nacional',copart:false,
+    v:{'0 a 18':337.73,'19 a 23':422.15,'24 a 28':523.49,'29 a 33':581.07,'34 a 38':621.74,'39 a 43':721.23,'44 a 48':862.16,'49 a 53':1010.46,'54 a 58':1202.95,'59+':2026.38}},
+  sula_direto_com:{nome:'Direto Nacional — Com Copart.',op:'SULAMERICA',cob:'Nacional',copart:true,
+    v:{'0 a 18':236.41,'19 a 23':295.51,'24 a 28':366.44,'29 a 33':406.75,'34 a 38':435.22,'39 a 43':504.87,'44 a 48':603.51,'49 a 53':707.32,'54 a 58':842.07,'59+':1418.43}},
+
+  brad_efetivo_sem:{nome:'Efetivo Plus — Sem Copart.',op:'BRADESCO',cob:'Nacional',copart:false,
+    v:{'0 a 18':385.42,'19 a 23':454.79,'24 a 28':550.29,'29 a 33':660.36,'34 a 38':752.80,'39 a 43':775.39,'44 a 48':944.08,'49 a 53':1110.42,'54 a 58':1321.41,'59+':2312.33}},
+  brad_efetivo_com:{nome:'Efetivo Plus — Com Copart.',op:'BRADESCO',cob:'Nacional',copart:true,
+    v:{'0 a 18':296.77,'19 a 23':350.19,'24 a 28':423.73,'29 a 33':508.48,'34 a 38':579.67,'39 a 43':597.06,'44 a 48':726.96,'49 a 53':855.05,'54 a 58':1017.50,'59+':1780.53}},
+  brad_top_sem:{nome:'Top Nacional — Sem Copart.',op:'BRADESCO',cob:'Nacional',copart:false,
+    v:{'0 a 18':536.09,'19 a 23':632.59,'24 a 28':765.42,'29 a 33':918.51,'34 a 38':1047.09,'39 a 43':1078.50,'44 a 48':1313.14,'49 a 53':1544.51,'54 a 58':1837.98,'59+':3216.28}},
+  brad_top_com:{nome:'Top Nacional — Com Copart.',op:'BRADESCO',cob:'Nacional',copart:true,
+    v:{'0 a 18':412.80,'19 a 23':487.10,'24 a 28':589.39,'29 a 33':707.27,'34 a 38':806.28,'39 a 43':830.48,'44 a 48':1011.16,'49 a 53':1189.32,'54 a 58':1415.29,'59+':2476.61}},
+
+  porto_bronze_sem:{nome:'Bronze — Sem Copart.',op:'PORTO',cob:'Regional',copart:false,
+    v:{'0 a 18':261.36,'19 a 23':316.95,'24 a 28':382.35,'29 a 33':437.73,'34 a 38':474.28,'39 a 43':489.81,'44 a 48':585.09,'49 a 53':629.87,'54 a 58':778.25,'59+':1308.18}},
+  porto_bronze_com:{nome:'Bronze — Com Copart.',op:'PORTO',cob:'Regional',copart:true,
+    v:{'0 a 18':190.79,'19 a 23':231.37,'24 a 28':279.12,'29 a 33':319.54,'34 a 38':346.22,'39 a 43':357.56,'44 a 48':427.11,'49 a 53':459.81,'54 a 58':568.12,'59+':954.97}},
+  porto_p320_sem:{nome:'P320 — Sem Copart.',op:'PORTO',cob:'Regional',copart:false,
+    v:{'0 a 18':324.30,'19 a 23':393.28,'24 a 28':474.43,'29 a 33':543.14,'34 a 38':588.50,'39 a 43':607.77,'44 a 48':725.99,'49 a 53':781.56,'54 a 58':965.67,'59+':1623.22}},
+  porto_p320_com:{nome:'P320 — Com Copart.',op:'PORTO',cob:'Regional',copart:true,
+    v:{'0 a 18':249.71,'19 a 23':302.83,'24 a 28':365.31,'29 a 33':418.22,'34 a 38':453.14,'39 a 43':467.98,'44 a 48':559.01,'49 a 53':601.80,'54 a 58':743.57,'59+':1249.88}},
+};
+
+/* map de plano → coluna da rede */
+const REDE_COL = {
+  amil_bronze_parcial:'bronze', amil_bronze_total:'bronze',
+  amil_prata_parcial:'prata',   amil_prata_total:'prata',
+  amil_s750_parcial:'s750',     amil_s750_total:'s750',
+  sula_direto_sem:'sula',       sula_direto_com:'sula',
+  brad_efetivo_sem:'brad_ef',   brad_efetivo_com:'brad_ef',
+  brad_top_sem:'brad_top',      brad_top_com:'brad_top',
+};
+
+const REDE_COLS = [
+  {key:'bronze',label:'AMIL Bronze',sub:'Regional'},
+  {key:'prata', label:'AMIL Prata', sub:'Nacional'},
+  {key:'s750',  label:'AMIL S750',  sub:'Regional'},
+  {key:'sula',  label:'SulAmérica', sub:'Direto Nac.'},
+  {key:'brad_ef',label:'Bradesco',  sub:'Efetivo Plus'},
+  {key:'brad_top',label:'Bradesco', sub:'Top Nac.'},
+];
+
+const REDE = [
+  {reg:'Águas Claras', hosp:'Águas Claras',        bronze:1,prata:1,s750:1,sula:0,brad_ef:1,brad_top:1},
+  {reg:'Asa Norte',    hosp:'Santa Helena',         bronze:0,prata:0,s750:1,sula:1,brad_ef:0,brad_top:1},
+  {reg:'Asa Norte',    hosp:'ManteVida',             bronze:0,prata:1,s750:1,sula:0,brad_ef:1,brad_top:1},
+  {reg:'Asa Sul',      hosp:'Hospital do Coração',   bronze:0,prata:0,s750:0,sula:1,brad_ef:0,brad_top:1},
+  {reg:'Asa Sul',      hosp:'DF Star',               bronze:0,prata:0,s750:0,sula:0,brad_ef:0,brad_top:0},
+  {reg:'Asa Sul',      hosp:'Santa Luzia',           bronze:0,prata:0,s750:1,sula:1,brad_ef:0,brad_top:1},
+  {reg:'Asa Sul',      hosp:'Alvorada',              bronze:1,prata:1,s750:1,sula:0,brad_ef:0,brad_top:1},
+  {reg:'Asa Sul',      hosp:'Home',                  bronze:0,prata:0,s750:1,sula:0,brad_ef:1,brad_top:1},
+  {reg:'Asa Sul',      hosp:'Santa Lúcia Sul',       bronze:0,prata:0,s750:1,sula:0,brad_ef:1,brad_top:1},
+  {reg:'Asa Sul',      hosp:'Pacini',                bronze:0,prata:1,s750:0,sula:0,brad_ef:0,brad_top:1},
+  {reg:'Asa Sul',      hosp:'HOB',                   bronze:0,prata:0,s750:0,sula:1,brad_ef:0,brad_top:1},
+  {reg:'Asa Sul',      hosp:'Hospital PAI',          bronze:0,prata:0,s750:1,sula:0,brad_ef:0,brad_top:1},
+  {reg:'Asa Sul',      hosp:'Sírio Libanês',         bronze:0,prata:0,s750:0,sula:0,brad_ef:0,brad_top:0},
+  {reg:'Ceilândia',    hosp:'Anchieta Ceilândia',    bronze:0,prata:1,s750:1,sula:1,brad_ef:1,brad_top:1},
+  {reg:'Ceilândia',    hosp:'Clínicas e Fraturas',   bronze:0,prata:0,s750:0,sula:0,brad_ef:0,brad_top:1},
+  {reg:'Cruzeiro',     hosp:'São Mateus',            bronze:0,prata:0,s750:1,sula:0,brad_ef:0,brad_top:1},
+  {reg:'Gama',         hosp:'Santa Lúcia Gama',      bronze:0,prata:1,s750:1,sula:1,brad_ef:1,brad_top:1},
+  {reg:'Lago Sul',     hosp:'Hospital Brasília',     bronze:1,prata:1,s750:1,sula:0,brad_ef:1,brad_top:1},
+  {reg:'Lago Sul',     hosp:'DAHER',                 bronze:0,prata:1,s750:1,sula:1,brad_ef:0,brad_top:1},
+  {reg:'Lago Sul',     hosp:'Hospital Urológico',    bronze:0,prata:0,s750:1,sula:0,brad_ef:0,brad_top:1},
+  {reg:'Sudoeste',     hosp:'Maternidade Brasília',  bronze:1,prata:1,s750:1,sula:0,brad_ef:1,brad_top:1},
+  {reg:'Taguatinga N.',hosp:'Anchieta',              bronze:0,prata:0,s750:1,sula:0,brad_ef:1,brad_top:1},
+  {reg:'Taguatinga S.',hosp:'Hospital Mantevida',    bronze:0,prata:1,s750:1,sula:0,brad_ef:0,brad_top:1},
+  {reg:'Taguatinga S.',hosp:'Santa Lúcia Pistão Sul',bronze:0,prata:1,s750:1,sula:0,brad_ef:0,brad_top:1},
+  {reg:'Taguatinga S.',hosp:'Santa Marta',           bronze:0,prata:0,s750:1,sula:1,brad_ef:1,brad_top:1},
+  {reg:'Todas',        hosp:'Laboratório Sabin',     bronze:0,prata:1,s750:1,sula:1,brad_ef:1,brad_top:1},
+  {reg:'Todas',        hosp:'Laboratório Exame',     bronze:1,prata:1,s750:1,sula:0,brad_ef:0,brad_top:1},
+];
+
+/* ═══════════════════════════════════════════════
+   COPARTICIPAÇÕES
+═══════════════════════════════════════════════ */
+const COPART = {
+  amil_bronze_parcial: copartAmilBronze(),
+  amil_bronze_total:   copartAmilBronze(),
+  amil_prata_parcial:  copartAmilPrata(),
+  amil_prata_total:    copartAmilPrata(),
+  amil_s750_parcial:   copartAmilS750(),
+  amil_s750_total:     copartAmilS750(),
+  sula_direto_com:     copartSula(),
+  brad_efetivo_com:    copartBradEfetivo(),
+  brad_top_com:        copartBradTop(),
+  porto_bronze_com:    {title:'Porto Bronze — Copart.',items:[{l:'Consulte as condições',v:'—'}]},
+  porto_p320_com:      {title:'Porto P320 — Copart.',items:[{l:'Consulte as condições',v:'—'}]},
+};
+
+function copartAmilBronze(){return{title:'AMIL Bronze — Coparticipação',items:[
+  {l:'Consultas eletivas/clínicas',v:'R$ 30'},{l:'Consultas hospitalares (PS)',v:'R$ 80'},
+  {l:'Exames básicos',v:'R$ 20'},{l:'Exames especiais',v:'R$ 100'},
+  {l:'Procedimentos básicos',v:'R$ 35'},{l:'Procedimentos especiais',v:'R$ 140'},
+  {l:'Fisioterapia / Fono / Nutri',v:'R$ 60'},{l:'Psicoterapia / T. Ocupacional',v:'R$ 60'},
+  {l:'Internação',v:'R$ 180'},
+]};}
+function copartAmilPrata(){return{title:'AMIL Prata — Coparticipação',items:[
+  {l:'Consultas eletivas/clínicas',v:'R$ 30'},{l:'Consultas hospitalares (PS)',v:'R$ 90'},
+  {l:'Exames básicos',v:'R$ 25'},{l:'Exames especiais',v:'R$ 110'},
+  {l:'Procedimentos básicos',v:'R$ 60'},{l:'Procedimentos especiais',v:'R$ 150'},
+  {l:'Fisioterapia / Fono / Nutri',v:'R$ 60'},{l:'Psicoterapia / T. Ocupacional',v:'R$ 60'},
+  {l:'Internação',v:'R$ 220'},
+]};}
+function copartAmilS750(){return{title:'AMIL S750 — Coparticipação',items:[
+  {l:'Consultas eletivas/clínicas',v:'R$ 55'},{l:'Consultas hospitalares (PS)',v:'R$ 130'},
+  {l:'Exames básicos',v:'R$ 35'},{l:'Exames especiais',v:'R$ 130'},
+  {l:'Procedimentos básicos',v:'R$ 60'},{l:'Procedimentos especiais',v:'R$ 170'},
+  {l:'Fisioterapia / Fono / Nutri',v:'R$ 70'},{l:'Psicoterapia / T. Ocupacional',v:'R$ 70'},
+  {l:'Internação',v:'R$ 400'},
+]};}
+function copartSula(){return{title:'SulAmérica Direto Nacional — Coparticipação',items:[
+  {l:'Consultas eletivas/clínicas',v:'R$ 33,37'},{l:'Consultas hospitalares (PS)',v:'R$ 100,11'},
+  {l:'Exames básicos',v:'R$ 55,62'},{l:'Exames especiais',v:'R$ 133,48'},
+  {l:'Procedimentos ambulatoriais',v:'R$ 166,85'},{l:'Terapias',v:'R$ 55,62'},
+  {l:'Internação',v:'R$ 300,33'},
+]};}
+function copartBradEfetivo(){return{title:'Bradesco Efetivo Plus — Coparticipação',items:[
+  {l:'Consultas eletivas/clínicas',v:'R$ 45'},{l:'Consultas hospitalares (PS)',v:'R$ 120'},
+  {l:'Exames básicos',v:'R$ 60'},{l:'Exames especiais',v:'R$ 160'},
+  {l:'Procedimentos ambulatoriais',v:'R$ 150'},{l:'Procedimentos seriados',v:'R$ 55'},
+  {l:'Internação',v:'R$ 300'},
+]};}
+function copartBradTop(){return{title:'Bradesco Top Nacional — Coparticipação',items:[
+  {l:'Consultas eletivas/clínicas',v:'R$ 70'},{l:'Consultas hospitalares (PS)',v:'R$ 130'},
+  {l:'Exames básicos',v:'R$ 65'},{l:'Exames especiais',v:'R$ 160'},
+  {l:'Procedimentos ambulatoriais',v:'R$ 180'},{l:'Procedimentos seriados',v:'R$ 65'},
+  {l:'Internação',v:'R$ 500'},
+]};}
+
+/* ═══════════════════════════════════════════════
+   ESTADO
+═══════════════════════════════════════════════ */
+let state = {step:1, planoKey:null, deps:[]};
+
+const opColors = {AMIL:'op-amil',SULAMERICA:'op-sula',BRADESCO:'op-brad',PORTO:'op-porto'};
+const opLabels = {AMIL:'AMIL',SULAMERICA:'SulAmérica',BRADESCO:'Bradesco',PORTO:'Porto Seguro'};
+
+function fmt(v){return'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');}
+
+/* ═══════════════════════════════════════════════
+   NAVEGAÇÃO
+═══════════════════════════════════════════════ */
+function goStep(n){
+  if(n===2){
+    const nm=document.getElementById('nome').value.trim();
+    const fx=document.getElementById('faixa').value;
+    if(!nm||!fx){alert('Preencha nome e faixa etária.');return;}
+  }
+  if(n===3&&!state.planoKey){alert('Selecione um plano.');return;}
+
+  ['s1','s2','s3','s4','s-success'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  document.getElementById('s'+n).classList.remove('hidden');
+  state.step=n;
+  updateSteps();
+
+  if(n===2) renderPlans();
+  if(n===3) renderDeps();
+  if(n===4) renderResumo();
+}
+
+function updateSteps(){
+  document.querySelectorAll('.step-item').forEach(el=>{
+    const s=+el.dataset.s;
+    el.classList.remove('active','done');
+    if(s===state.step) el.classList.add('active');
+    else if(s<state.step) el.classList.add('done');
+  });
+}
+
+/* ═══════════════════════════════════════════════
+   PLANOS
+═══════════════════════════════════════════════ */
+let curOp='todos';
+
+function filterOp(el){
+  document.querySelectorAll('.op-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  curOp=el.dataset.op;
+  renderPlans();
+}
+
+function renderPlans(){
+  const faixa=document.getElementById('faixa').value;
+  document.getElementById('faixa-badge').textContent=faixa;
+  const grid=document.getElementById('plans-grid');
+  grid.innerHTML='';
+
+  Object.entries(PLANOS).forEach(([key,p])=>{
+    if(curOp!=='todos'&&p.op!==curOp) return;
+    const preco=p.v[faixa]||0;
+    const sel=state.planoKey===key;
+    const div=document.createElement('div');
+    div.className='plan-card'+(sel?' selected':'');
+    div.onclick=()=>selectPlan(key);
+    div.innerHTML=`
+      <div class="op-badge ${opColors[p.op]}">${opLabels[p.op]}</div>
+      <div class="plan-name">${p.nome}</div>
+      <div class="plan-badges">
+        <span class="plan-badge ${p.cob==='Nacional'?'nacional':''}">${p.cob}</span>
+        <span class="plan-badge ${p.copart?'copart':'sem-copart'}">${p.copart?'Com copart.':'Sem copart.'}</span>
+      </div>
+      <div class="plan-price">${fmt(preco)}</div>
+      <div class="plan-price-label">por mês / vida</div>
+      <div class="plan-check"><svg viewBox="0 0 12 10"><polyline points="1,5 4,8 11,1" stroke="#fff" stroke-width="2" fill="none"/></svg></div>
+    `;
+    grid.appendChild(div);
+  });
+}
+
+function selectPlan(key){
+  state.planoKey=key;
+  renderPlans();
+  renderRede(key);
+  renderCopart(key);
+}
+
+function renderRede(key){
+  const col=REDE_COL[key];
+  const card=document.getElementById('rede-card');
+  const wrap=document.getElementById('rede-wrap');
+  if(!col){
+    card.classList.remove('hidden');
+    wrap.innerHTML='<p style="color:var(--muted);font-size:13px">Rede credenciada disponível mediante consulta com nossa equipe.</p>';
+    return;
+  }
+  card.classList.remove('hidden');
+  const headers=REDE_COLS.map(c=>`<th class="${c.key===col?'hl':''}">${c.label}<br><small>${c.sub}</small></th>`).join('');
+  const rows=REDE.map(r=>{
+    const cells=REDE_COLS.map(c=>`<td class="${c.key===col?'hl':''}">${r[c.key]?'<span class="tick">✓</span>':'<span class="cross">–</span>'}</td>`).join('');
+    return`<tr><td><strong>${r.reg}</strong></td><td>${r.hosp}</td>${cells}</tr>`;
+  }).join('');
+  wrap.innerHTML=`<table class="rede"><thead><tr><th>Região</th><th>Hospital / Lab.</th>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderCopart(key){
+  const card=document.getElementById('copart-card');
+  const wrap=document.getElementById('copart-wrap');
+  const data=COPART[key];
+  if(!data){card.classList.add('hidden');return;}
+  card.classList.remove('hidden');
+  const items=data.items.map(i=>`<div class="copart-item"><div class="ci-label">${i.l}</div><div class="ci-val">${i.v}</div></div>`).join('');
+  wrap.innerHTML=`<p style="font-size:13px;color:var(--muted);margin-bottom:12px">${data.title}</p><div class="copart-grid">${items}</div><p class="copart-note">* Valores por procedimento realizado. Pode haver teto por consulta.</p>`;
+}
+
+/* ═══════════════════════════════════════════════
+   DEPENDENTES
+═══════════════════════════════════════════════ */
+const FAIXAS=['0 a 18','19 a 23','24 a 28','29 a 33','34 a 38','39 a 43','44 a 48','49 a 53','54 a 58','59+'];
+const PARENTESCOS=['Cônjuge','Filho(a)','Pai','Mãe','Outro'];
+
+function addDep(){
+  state.deps.push({nome:'',parentesco:'',faixa:''});
+  renderDeps();
+}
+function removeDep(i){state.deps.splice(i,1);renderDeps();}
+function setDep(i,field,val){state.deps[i][field]=val;}
+
+function renderDeps(){
+  const list=document.getElementById('deps-list');
+  if(!state.deps.length){list.innerHTML='<p style="color:var(--muted);font-size:13px;margin-bottom:16px">Nenhum dependente adicionado.</p>';return;}
+  list.innerHTML=state.deps.map((d,i)=>{
+    const p=PLANOS[state.planoKey];
+    const preco=d.faixa&&p?p.v[d.faixa]||0:0;
+    const fxOpts=FAIXAS.map(f=>`<option value="${f}" ${d.faixa===f?'selected':''}>${f} anos</option>`).join('');
+    const ptOpts=PARENTESCOS.map(pt=>`<option value="${pt}" ${d.parentesco===pt?'selected':''}>${pt}</option>`).join('');
+    return`<div class="dep-card">
+      <div class="dep-card-title">Dependente ${i+1}</div>
+      <button class="dep-remove" onclick="removeDep(${i})">Remover</button>
+      <div class="field-row">
+        <div class="field"><label>Nome</label><input type="text" value="${d.nome}" placeholder="Nome do dependente" oninput="setDep(${i},'nome',this.value)"></div>
+        <div class="field"><label>Parentesco</label><select onchange="setDep(${i},'parentesco',this.value)"><option value="">Selecione…</option>${ptOpts}</select></div>
+      </div>
+      <div class="field" style="max-width:240px">
+        <label>Faixa etária</label>
+        <select onchange="setDep(${i},'faixa',this.value);renderDeps()"><option value="">Selecione…</option>${fxOpts}</select>
+      </div>
+      ${preco>0?`<div class="dep-price">${fmt(preco)} / mês</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════
+   RESUMO
+═══════════════════════════════════════════════ */
+function renderResumo(){
+  const nome=document.getElementById('nome').value.trim();
+  const faixa=document.getElementById('faixa').value;
+  const p=PLANOS[state.planoKey];
+  const vlTitular=p.v[faixa]||0;
+  let total=vlTitular;
+
+  let rowsDeps='';
+  state.deps.forEach((d,i)=>{
+    const vd=d.faixa&&p?p.v[d.faixa]||0:0;
+    total+=vd;
+    rowsDeps+=`<div class="resumo-row">
+      <span class="rr-label">Dep. ${i+1} — ${d.nome||'—'} (${d.parentesco||'—'}, ${d.faixa||'—'})</span>
+      <span class="rr-val">${fmt(vd)}</span>
+    </div>`;
+  });
+
+  document.getElementById('resumo-content').innerHTML=`
+    <div class="resumo-header">
+      <div class="resumo-nome">${nome}</div>
+      <div class="resumo-plano">${opLabels[p.op]} · ${p.nome} · ${p.cob}</div>
+      <div class="resumo-total">${fmt(total)} <span>/ mês</span></div>
+    </div>
+    <div class="card">
+      <div class="resumo-row"><span class="rr-label">Titular — ${faixa} anos</span><span class="rr-val">${fmt(vlTitular)}</span></div>
+      ${rowsDeps}
+      <div class="resumo-row" style="border-top:2px solid var(--navy);margin-top:4px;padding-top:14px">
+        <span class="rr-label" style="font-weight:700;color:var(--navy)">Total mensal</span>
+        <span class="rr-val" style="font-size:18px;color:var(--blue)">${fmt(total)}</span>
+      </div>
+    </div>
+  `;
+}
+
+/* ═══════════════════════════════════════════════
+   ENVIO
+═══════════════════════════════════════════════ */
+async function enviar(){
+  const btn=document.getElementById('btn-enviar');
+  btn.textContent='Enviando…'; btn.disabled=true;
+
+  const nome=document.getElementById('nome').value.trim();
+  const faixa=document.getElementById('faixa').value;
+  const email=document.getElementById('email').value.trim();
+  const p=PLANOS[state.planoKey];
+  const vlTitular=p.v[faixa]||0;
+  let total=vlTitular;
+  state.deps.forEach(d=>{total+=d.faixa&&p?p.v[d.faixa]||0:0;});
+
+  const data={
+    nome,faixa,email,
+    plano:`${opLabels[p.op]} — ${p.nome}`,
+    cobertura:p.cob,
+    valorTitular:fmt(vlTitular),
+    totalMensal:fmt(total),
+    qtdDependentes:state.deps.length
+  };
+  state.deps.forEach((d,i)=>{
+    data[`dep${i+1}_nome`]=d.nome;
+    data[`dep${i+1}_parentesco`]=d.parentesco;
+    data[`dep${i+1}_faixa`]=d.faixa;
+    data[`dep${i+1}_valor`]=d.faixa&&p?fmt(p.v[d.faixa]||0):'';
+  });
+
+  if(SCRIPT_URL==='COLE_AQUI_A_URL_DO_APPS_SCRIPT'){
+    // Modo demo — simula envio
+    await new Promise(r=>setTimeout(r,800));
+    showSuccess();
+    return;
+  }
+
+  try{
+    await fetch(SCRIPT_URL,{method:'POST',body:new URLSearchParams({data:JSON.stringify(data)})});
+    showSuccess();
+  }catch(e){
+    btn.textContent='Tentar novamente'; btn.disabled=false;
+    alert('Erro ao enviar. Verifique a conexão e tente novamente.');
+  }
+}
+
+function showSuccess(){
+  ['s1','s2','s3','s4'].forEach(id=>document.getElementById(id).classList.add('hidden'));
+  document.getElementById('s-success').classList.remove('hidden');
+  document.querySelectorAll('.step-item').forEach(el=>el.classList.add('done'));
+}
+</script>
+</body>
+</html>
