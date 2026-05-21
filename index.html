@@ -98,18 +98,36 @@ input[type=text]:focus,input[type=email]:focus,select:focus{border-color:var(--b
 .plan-check svg{width:12px;height:12px;fill:#fff;}
 .plan-card.selected .plan-check{display:flex;}
 
-/* ── REDE TABLE ── */
+/* ── REDE ── */
 .rede-wrap{margin-top:20px;}
 .section-title{font-family:'Nunito',sans-serif;font-weight:800;font-size:15px;color:var(--navy);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);}
-.table-wrap{overflow-x:auto;}
-table.rede{width:100%;border-collapse:collapse;font-size:13px;}
-table.rede th{background:var(--navy);color:#fff;font-family:'Nunito',sans-serif;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.06em;padding:10px 12px;text-align:left;}
+.rede-tabs{display:flex;gap:8px;margin-bottom:16px;}
+.rede-tab{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-family:'Nunito',sans-serif;font-weight:700;font-size:12px;color:var(--muted);cursor:pointer;transition:all .15s;}
+.rede-tab.active{border-color:var(--blue);background:var(--blue-ice);color:var(--navy);}
+.rede-regioes{display:flex;flex-direction:column;gap:8px;}
+.rede-regiao-block{background:var(--bg);border-radius:10px;padding:12px 14px;}
+.rede-regiao-nome{font-family:'Nunito',sans-serif;font-weight:800;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
+.rede-hosps{display:flex;flex-wrap:wrap;gap:6px;}
+.rede-hosp-chip{background:#fff;border:1.5px solid #c3e6cb;border-radius:20px;padding:5px 12px;font-size:13px;color:var(--navy);}
+.rede-hosp-chip::before{content:'✓ ';color:var(--ok);font-weight:800;}
+.table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border);}
+table.rede{width:100%;border-collapse:collapse;font-size:12px;}
+table.rede th{background:var(--navy);color:#fff;font-family:'Nunito',sans-serif;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.04em;padding:10px 8px;text-align:center;white-space:nowrap;}
 table.rede th.hl{background:var(--blue);}
-table.rede td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text);}
+table.rede th.stk{position:sticky;z-index:3;background:var(--navy);}
+table.rede th.stk1{left:0;min-width:76px;text-align:left;}
+table.rede th.stk2{left:76px;min-width:150px;text-align:left;border-right:2px solid rgba(255,255,255,.2);}
+table.rede td{padding:8px 8px;border-bottom:1px solid var(--border);text-align:center;}
 table.rede td.hl{background:var(--blue-ice);}
+table.rede td.stk{position:sticky;background:#fff;z-index:2;}
+table.rede td.stk1{left:0;min-width:76px;font-size:11px;color:var(--muted);font-weight:600;text-align:left;}
+table.rede td.stk2{left:76px;min-width:150px;font-weight:600;color:var(--navy);text-align:left;border-right:2px solid var(--border);}
+table.rede tr:hover td{background:#f8fbff;}
+table.rede tr:hover td.stk{background:#f8fbff;}
+table.rede tr:hover td.hl{background:#d8edf8;}
 table.rede tr:last-child td{border-bottom:none;}
-.tick{color:var(--ok);font-size:16px;}
-.cross{color:#ccc;font-size:16px;}
+.tick{color:var(--ok);font-size:14px;font-weight:800;}
+.cross{color:#ddd;font-size:13px;}
 
 /* ── COPART TABLE ── */
 .copart-wrap{margin-top:20px;}
@@ -544,22 +562,44 @@ function selectPlan(key){
   fbq('track','CustomizeProduct',{content_name:PLANOS[key].nome,content_category:opLabels[PLANOS[key].op]});
 }
 
+let redeView='cards';
 function renderRede(key){
   const col=REDE_COL[key];
   const card=document.getElementById('rede-card');
   const wrap=document.getElementById('rede-wrap');
+  card.classList.remove('hidden');
   if(!col){
-    card.classList.remove('hidden');
     wrap.innerHTML='<p style="color:var(--muted);font-size:13px">Rede credenciada disponível mediante consulta com nossa equipe.</p>';
     return;
   }
-  card.classList.remove('hidden');
-  const headers=REDE_COLS.map(c=>`<th class="${c.key===col?'hl':''}">${c.label}<br><small>${c.sub}</small></th>`).join('');
-  const rows=REDE.map(r=>{
-    const cells=REDE_COLS.map(c=>`<td class="${c.key===col?'hl':''}">${r[c.key]?'<span class="tick">✓</span>':'<span class="cross">–</span>'}</td>`).join('');
-    return`<tr><td><strong>${r.reg}</strong></td><td>${r.hosp}</td>${cells}</tr>`;
-  }).join('');
-  wrap.innerHTML=`<table class="rede"><thead><tr><th>Região</th><th>Hospital / Lab.</th>${headers}</tr></thead><tbody>${rows}</tbody></table>`;
+  wrap.innerHTML=`
+    <div class="rede-tabs">
+      <div class="rede-tab ${redeView==='cards'?'active':''}" onclick="redeView='cards';renderRede('${key}')">🏥 Hospitais do plano</div>
+      <div class="rede-tab ${redeView==='table'?'active':''}" onclick="redeView='table';renderRede('${key}')">📊 Comparativo completo</div>
+    </div>
+    <div id="rede-body"></div>
+  `;
+  if(redeView==='cards'){
+    const cobertos=REDE.filter(r=>r[col]);
+    const regioes=[...new Set(cobertos.map(r=>r.reg))];
+    const html=regioes.map(reg=>{
+      const hosps=cobertos.filter(r=>r.reg===reg);
+      const chips=hosps.map(r=>`<span class="rede-hosp-chip">${r.hosp}</span>`).join('');
+      return`<div class="rede-regiao-block"><div class="rede-regiao-nome">${reg}</div><div class="rede-hosps">${chips}</div></div>`;
+    }).join('');
+    document.getElementById('rede-body').innerHTML=
+      `<div class="rede-regioes">${html}</div>
+       <p style="font-size:11px;color:var(--muted);margin-top:10px">Exibindo ${cobertos.length} hospitais cobertos por este plano.</p>`;
+  } else {
+    const headers=REDE_COLS.map(c=>`<th class="stk${c.key===col?' hl':''}">${c.label}<br><small style="font-weight:400;opacity:.8">${c.sub}</small></th>`).join('');
+    const rows=REDE.map(r=>{
+      const cells=REDE_COLS.map(c=>`<td class="${c.key===col?'hl':''}">${r[c.key]?'<span class="tick">✓</span>':'<span class="cross">–</span>'}</td>`).join('');
+      return`<tr><td class="stk stk1">${r.reg}</td><td class="stk stk2">${r.hosp}</td>${cells}</tr>`;
+    }).join('');
+    document.getElementById('rede-body').innerHTML=
+      `<p style="font-size:11px;color:var(--muted);margin-bottom:8px">Role para o lado para ver todas as operadoras →</p>
+       <div class="table-wrap"><table class="rede"><thead><tr><th class="stk stk1">Região</th><th class="stk stk2">Hospital / Lab.</th>${headers}</tr></thead><tbody>${rows}</tbody></table></div>`;
+  }
 }
 
 function renderCopart(key){
