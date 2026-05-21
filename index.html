@@ -4,6 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Simulador — Plano de Saúde Empresarial</title>
+<!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1539990701043173');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1539990701043173&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -322,6 +339,10 @@ const PLANOS = {
     v:{'0 a 18':324.30,'19 a 23':393.28,'24 a 28':474.43,'29 a 33':543.14,'34 a 38':588.50,'39 a 43':607.77,'44 a 48':725.99,'49 a 53':781.56,'54 a 58':965.67,'59+':1623.22}},
   porto_p320_com:{nome:'P320 — Com Copart.',op:'PORTO',cob:'Regional',copart:true,
     v:{'0 a 18':249.71,'19 a 23':302.83,'24 a 28':365.31,'29 a 33':418.22,'34 a 38':453.14,'39 a 43':467.98,'44 a 48':559.01,'49 a 53':601.80,'54 a 58':743.57,'59+':1249.88}},
+  porto_p420_sem:{nome:'P420 — Sem Copart.',op:'PORTO',cob:'Regional',copart:false,
+    v:{'0 a 18':416.24,'19 a 23':504.78,'24 a 28':608.93,'29 a 33':697.12,'34 a 38':755.34,'39 a 43':780.07,'44 a 48':931.81,'49 a 53':1003.14,'54 a 58':1239.45,'59+':2083.42}},
+  porto_p420_com:{nome:'P420 — Com Copart.',op:'PORTO',cob:'Regional',copart:true,
+    v:{'0 a 18':341.32,'19 a 23':413.92,'24 a 28':499.33,'29 a 33':571.64,'34 a 38':619.38,'39 a 43':639.66,'44 a 48':764.09,'49 a 53':822.57,'54 a 58':1016.35,'59+':1708.40}},
 };
 
 /* map de plano → coluna da rede */
@@ -386,8 +407,6 @@ const COPART = {
   sula_direto_com:     copartSula(),
   brad_efetivo_com:    copartBradEfetivo(),
   brad_top_com:        copartBradTop(),
-  porto_bronze_com:    {title:'Porto Bronze — Copart.',items:[{l:'Consulte as condições',v:'—'}]},
-  porto_p320_com:      {title:'Porto P320 — Copart.',items:[{l:'Consulte as condições',v:'—'}]},
 };
 
 function copartAmilBronze(){return{title:'AMIL Bronze — Coparticipação',items:[
@@ -448,6 +467,7 @@ function goStep(n){
     const nm=document.getElementById('nome').value.trim();
     const fx=document.getElementById('faixa').value;
     if(!nm||!fx){alert('Preencha nome e faixa etária.');return;}
+    fbq('track','ViewContent');
   }
   if(n===3&&!state.planoKey){alert('Selecione um plano.');return;}
 
@@ -515,6 +535,7 @@ function selectPlan(key){
   renderPlans();
   renderRede(key);
   renderCopart(key);
+  fbq('track','CustomizeProduct',{content_name:PLANOS[key].nome,content_category:opLabels[PLANOS[key].op]});
 }
 
 function renderRede(key){
@@ -649,6 +670,7 @@ async function enviar(){
     data[`dep${i+1}_valor`]=d.faixa&&p?fmt(p.v[d.faixa]||0):'';
   });
 
+  fbq('track','Lead',{content_name:PLANOS[state.planoKey].nome,currency:'BRL'});
   if(SCRIPT_URL==='COLE_AQUI_A_URL_DO_APPS_SCRIPT'){
     // Modo demo — simula envio
     await new Promise(r=>setTimeout(r,800));
